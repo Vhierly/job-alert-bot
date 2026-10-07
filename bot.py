@@ -135,6 +135,77 @@ def job_check():
     cleanup_old_jobs()
 
 
+def get_status_message() -> str:
+    """Build a status report message."""
+    import sqlite3
+    from config import DB_PATH
+
+    env_label = "Railway (Production)" if IS_RAILWAY else "Local"
+
+    # Count sent jobs
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM sent_jobs")
+        total_sent = c.fetchone()[0]
+        conn.close()
+    except Exception:
+        total_sent = 0
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    return (
+        f"📊 <b>Bot Status</b>\n\n"
+        f"🖥️ Environment: {env_label}\n"
+        f"📍 Location: {LOCATION_FILTER.title()}\n"
+        f"⏰ Timezone: {TIMEZONE}\n"
+        f"🕘 Schedule: 24/7 (setiap jam)\n"
+        f"📋 Max jobs per notif: {MAX_JOBS_PER_NOTIFICATION}\n"
+        f"📨 Total jobs sent: {total_sent}\n"
+        f"🕐 Last check: {now}\n"
+        f"✅ Status: <b>Active</b>"
+    )
+
+
+def poll_updates():
+    """Poll Telegram for /status commands and reply."""
+    logger.info("Starting update poller for /status command")
+    offset = 0
+
+    while True:
+        try:
+            resp = requests.get(
+                f"{TELEGRAM_API}/getUpdates",
+                params={"offset": offset, "timeout": 30},
+                timeout=35,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                for update in data.get("result", []):
+                    offset = update["update_id"] + 1
+                    message = update.get("message", {})
+                    text = message.get("text", "")
+                    chat_id = message.get("chat", {}).get("id")
+
+                    if text.strip() == "/status" and chat_id:
+                        status_msg = get_status_message()
+                        requests.post(
+                            f"{TELEGRAM_API}/sendMessage",
+                            json={
+                                "chat_id": chat_id,
+                                "text": status_msg,
+                                "parse_mode": "HTML",
+                                "disable_web_page_preview": True,
+                            },
+                            timeout=15,
+                        )
+                        logger.info(f"/status replied to chat {chat_id}")
+        except Exception as e:
+            logger.debug(f"Poll error: {e}")
+
+        time.sleep(1)
+
+
 def main():
     """Start the scheduler."""
     logger.info("Starting Job Alert Bot...")
@@ -155,8 +226,15 @@ def main():
         f"📍 Location: {LOCATION_FILTER.title()} only\n"
         f"📋 Max jobs per notification: {MAX_JOBS_PER_NOTIFICATION}\n"
         f"🖥️ Environment: {env_label}\n\n"
-        "Bot akan cek lowongan setiap jam, 24 jam sehari."
+        "Bot akan cek lowongan setiap jam, 24 jam sehari.\n"
+        "Ketik /status untuk cek status bot."
     )
+
+    # Start /status poller in background thread
+    import threading
+    poller_thread = threading.Thread(target=poll_updates, daemon=True)
+    poller_thread.start()
+    logger.info("Status poller started")
 
     # Setup scheduler
     scheduler = BlockingScheduler(timezone=TIMEZONE)

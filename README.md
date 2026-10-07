@@ -13,6 +13,12 @@ Bot Telegram yang cari lowongan kerja di Manado (fokus Excel & Office) dan kirim
 - 🔄 **Anti-Duplicate** — Job sama ga dikirim 2x
 - 🖥️ **Environment Detection** — Bot tau dia jalan di Local atau Railway
 
+## Perintah Bot
+
+| Perintah | Keterangan |
+|---|---|
+| `/status` | Cek status bot (environment, total jobs sent, schedule) |
+
 ## Cara Deploy ke Railway
 
 1. Fork repo ini
