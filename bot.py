@@ -119,7 +119,7 @@ def job_check():
             mark_job_sent(job_key, job["company"], job["position"], job["source"])
             sent_count += 1
             # Send immediately — don't wait for all scraping to finish
-            message = format_job_message([job])
+            message = format_job_message([job], start_index=sent_count)
             send_notification(message)
             logger.info(f"Streamed job #{sent_count}: {job['company']} | {job['position']}")
 

@@ -4,13 +4,14 @@ Format job listings into Telegram message
 from config import MAX_JOBS_PER_NOTIFICATION
 
 
-def format_job_message(jobs: list) -> str:
-    """Format a list of jobs into a Telegram HTML message."""
+def format_job_message(jobs: list, start_index: int = 1) -> str:
+    """Format a list of jobs into a Telegram HTML message.
+    start_index: counter number for the first job (used by streaming mode)."""
     if not jobs:
         return None
 
     messages = []
-    for i, job in enumerate(jobs[:MAX_JOBS_PER_NOTIFICATION], 1):
+    for i, job in enumerate(jobs[:MAX_JOBS_PER_NOTIFICATION], start_index):
         msg = f"""
 <b>📋 Lowongan #{i}</b>
 
