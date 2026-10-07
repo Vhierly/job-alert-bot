@@ -629,56 +629,67 @@ def scrape_jobfair(on_job_found=None) -> list:
 
 
 def scrape_glints(keyword: str, on_job_found=None) -> list:
-    """Scrape Glints Indonesia for job listings."""
+    """Scrape Glints Indonesia using cloudscraper (bypasses Cloudflare)."""
+    import cloudscraper
+    from bs4 import BeautifulSoup
+
     jobs = []
-    url = f"https://glints.com/id/en/job-finder?keyword={quote_plus(keyword)}"
+    url = f"https://glints.com/id/en/opportunities/jobs/explore?country=ID&locationName=Manado&keyword={quote_plus(keyword)}"
+
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            stealth_sync(page)
-            page.goto(url, timeout=30000, wait_until="networkidle")
-            page.wait_for_timeout(3000)
+        scraper = cloudscraper.create_scraper()
+        resp = scraper.get(url, timeout=15, headers={
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
 
-            # Glints uses various selectors — try common patterns
-            job_cards = page.query_selector_all("[class*='job']")
-            if not job_cards:
-                job_cards = page.query_selector_all("article")
-            if not job_cards:
-                job_cards = page.query_selector_all("[class*='card']")
+        if resp.status_code != 200:
+            logger.warning(f"Glints returned status {resp.status_code}")
+            return jobs
 
-            for card in job_cards[:10]:
-                try:
-                    title_el = card.query_selector("h2, h3, [class*='title']")
-                    company_el = card.query_selector("[class*='company']")
-                    location_el = card.query_selector("[class*='location']")
-                    link_el = card.query_selector("a[href]")
+        soup = BeautifulSoup(resp.text, 'html.parser')
 
-                    if title_el:
-                        title = _clean(title_el.inner_text())
-                        company = _clean(company_el.inner_text()) if company_el else "Unknown"
-                        location = _clean(location_el.inner_text()) if location_el else "Indonesia"
-                        link = link_el.get_attribute("href") if link_el else ""
-                        if link and not link.startswith("http"):
-                            link = "https://glints.com" + link
+        # Find job cards using CompactJobCard class
+        cards = soup.find_all('div', class_=lambda c: c and 'CompactJobCard' in c)
+        logger.info(f"Glints: Found {len(cards)} job cards for '{keyword}'")
 
-                        if _is_manado(location) and not _is_excluded(f"{title} {company}"):
-                            job = {
-                                "company": company,
-                                "position": title,
-                                "location": location,
-                                "deadline": "Cek di halaman lowongan",
-                                "email": "Cek di halaman lowongan",
-                                "link": link,
-                                "source": "Glints",
-                            }
-                            jobs.append(job)
-                            if on_job_found:
-                                on_job_found(job)
-                except Exception:
-                    continue
+        for card in cards[:10]:
+            try:
+                # Title - look for JobTitle class
+                title_el = card.find('a', class_=lambda c: c and 'JobTitle' in c)
+                title = title_el.get_text(strip=True) if title_el else None
 
-            browser.close()
+                # Company - look for CompanyLink class
+                company_el = card.find('a', class_=lambda c: c and 'CompanyLink' in c)
+                company = company_el.get_text(strip=True) if company_el else "Unknown"
+
+                # Location - look for Location class
+                location_el = card.find('span', class_=lambda c: c and 'Location' in c)
+                location = location_el.get_text(strip=True) if location_el else "Indonesia"
+
+                # Link
+                link_el = card.find('a', href=True)
+                link = link_el.get('href', '') if link_el else ""
+                if link and not link.startswith('http'):
+                    link = 'https://glints.com' + link
+
+                if title and _is_manado(location) and not _is_excluded(f"{title} {company}"):
+                    job = {
+                        "company": company,
+                        "position": title,
+                        "location": location,
+                        "deadline": "Cek di halaman lowongan",
+                        "email": "Cek di halaman lowongan",
+                        "link": link,
+                        "source": "Glints",
+                    }
+                    jobs.append(job)
+                    logger.info(f"  ✓ {company} | {title} | {location}")
+                    if on_job_found:
+                        on_job_found(job)
+            except Exception:
+                continue
+
     except Exception as e:
         logger.warning(f"Glints scrape failed for '{keyword}': {e}")
 
@@ -706,8 +717,8 @@ def scrape_all(on_job_found=None) -> list:
     for keyword in SEARCH_KEYWORDS:
         logger.info(f"Searching: {keyword}")
 
-        # Only sources confirmed working (tested 2026-10-07)
-        for scraper in [scrape_kalibrr, scrape_linkedin]:
+        # Sources confirmed working (tested 2026-10-07)
+        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_glints]:
             try:
                 jobs = scraper(keyword, on_job_found=on_job_found)
                 for job in jobs:
