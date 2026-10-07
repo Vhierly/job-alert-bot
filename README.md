@@ -10,7 +10,7 @@ Bot Telegram yang cari lowongan kerja di Manado (fokus Excel & Office) dan kirim
 - 📱 **Multi-Source** — Kalibrr, JobStreet, LinkedIn, Twitter/X, Facebook, Instagram, Job Fair
 - 💓 **Heartbeat** — Bot kirim sinyal hidup tiap 3 jam
 - ⏰ **24/7** — Cek lowongan setiap jam, hari libur pun tetap jalan
-- 🔄 **Anti-Duplicate** — Job sama ga dikirim 2x
+- 🔄 **Anti-Duplicate** — Job sama ga dikirim 2x (persistent volume di Railway)
 - 🖥️ **Environment Detection** — Bot tau dia jalan di Local atau Railway
 
 ## Perintah Bot

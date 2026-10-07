@@ -289,8 +289,9 @@ JOB_SITES = {
     "street": "https://www.street.co.id/search?q={keyword}",
 }
 
-# Database
-DB_PATH = os.path.join(os.path.dirname(__file__), "jobs.db")
+# Database — persistent volume on Railway, local fallback
+DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(__file__))
+DB_PATH = os.path.join(DATA_DIR, "jobs.db")
 
 # Notification settings
 MAX_JOBS_PER_NOTIFICATION = 5

@@ -214,7 +214,9 @@ def main():
     logger.info(f"Location filter: {LOCATION_FILTER}")
     logger.info(f"Environment: {ENVIRONMENT} (Railway: {IS_RAILWAY})")
 
-    # Init database
+    # Init database — ensure data directory exists
+    data_dir = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
+    os.makedirs(data_dir, exist_ok=True)
     init_db()
 
     # Send startup notification
