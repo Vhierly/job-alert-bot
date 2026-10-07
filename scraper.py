@@ -628,6 +628,63 @@ def scrape_jobfair(on_job_found=None) -> list:
     return jobs
 
 
+def scrape_glints(keyword: str, on_job_found=None) -> list:
+    """Scrape Glints Indonesia for job listings."""
+    jobs = []
+    url = f"https://glints.com/id/en/job-finder?keyword={quote_plus(keyword)}"
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            stealth_sync(page)
+            page.goto(url, timeout=30000, wait_until="networkidle")
+            page.wait_for_timeout(3000)
+
+            # Glints uses various selectors — try common patterns
+            job_cards = page.query_selector_all("[class*='job']")
+            if not job_cards:
+                job_cards = page.query_selector_all("article")
+            if not job_cards:
+                job_cards = page.query_selector_all("[class*='card']")
+
+            for card in job_cards[:10]:
+                try:
+                    title_el = card.query_selector("h2, h3, [class*='title']")
+                    company_el = card.query_selector("[class*='company']")
+                    location_el = card.query_selector("[class*='location']")
+                    link_el = card.query_selector("a[href]")
+
+                    if title_el:
+                        title = _clean(title_el.inner_text())
+                        company = _clean(company_el.inner_text()) if company_el else "Unknown"
+                        location = _clean(location_el.inner_text()) if location_el else "Indonesia"
+                        link = link_el.get_attribute("href") if link_el else ""
+                        if link and not link.startswith("http"):
+                            link = "https://glints.com" + link
+
+                        if _is_manado(location) and not _is_excluded(f"{title} {company}"):
+                            job = {
+                                "company": company,
+                                "position": title,
+                                "location": location,
+                                "deadline": "Cek di halaman lowongan",
+                                "email": "Cek di halaman lowongan",
+                                "link": link,
+                                "source": "Glints",
+                            }
+                            jobs.append(job)
+                            if on_job_found:
+                                on_job_found(job)
+                except Exception:
+                    continue
+
+            browser.close()
+    except Exception as e:
+        logger.warning(f"Glints scrape failed for '{keyword}': {e}")
+
+    return jobs
+
+
 def scrape_all(on_job_found=None) -> list:
     """Scrape all sources for all keywords.
     If on_job_found callback is provided, calls it immediately for each match."""
@@ -649,7 +706,7 @@ def scrape_all(on_job_found=None) -> list:
     for keyword in SEARCH_KEYWORDS:
         logger.info(f"Searching: {keyword}")
 
-        # Google Jobs & Indeed removed — too aggressive bot protection (CAPTCHA/block)
+        # Google Jobs, Indeed & Glints removed — too aggressive bot protection (CAPTCHA/Cloudflare)
         for scraper in [scrape_kalibrr, scrape_jobstreet, scrape_linkedin, scrape_twitter_x, scrape_facebook, scrape_instagram]:
             try:
                 jobs = scraper(keyword, on_job_found=on_job_found)
