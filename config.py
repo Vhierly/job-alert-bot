@@ -289,9 +289,9 @@ JOB_SITES = {
     "street": "https://www.street.co.id/search?q={keyword}",
 }
 
-# Database — persistent volume on Railway, local fallback
-DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(__file__))
-DB_PATH = os.path.join(DATA_DIR, "jobs.db")
+# Database — Supabase (persistent across redeploys)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://deesveuekxfyxtwuvtue.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlZXN2ZXVla3hmeXh0d3V2dHVlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTMyODA2NCwiZXhwIjoyMTA2OTA0MDY0fQ.c10T_zbE6p_Nh0waIy-LtQVjBUni7EBVCS0yJ2M0alE")
 
 # Notification settings
 MAX_JOBS_PER_NOTIFICATION = 5

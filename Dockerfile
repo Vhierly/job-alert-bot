@@ -39,8 +39,5 @@ RUN playwright install chromium
 # Copy application
 COPY . .
 
-# Set data directory for persistent volume
-ENV DATA_DIR=/data
-
 # Run bot
 CMD ["python", "bot.py"]

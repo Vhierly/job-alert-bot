@@ -24,8 +24,10 @@ from config import (
     LOCATION_FILTER,
     ENVIRONMENT,
     IS_RAILWAY,
+    SUPABASE_URL,
+    SUPABASE_KEY,
 )
-from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs
+from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs, get_sent_count
 from scraper import scrape_all
 from formatter import format_job_message, format_no_jobs
 
@@ -137,21 +139,8 @@ def job_check():
 
 def get_status_message() -> str:
     """Build a status report message."""
-    import sqlite3
-    from config import DB_PATH
-
     env_label = "Railway (Production)" if IS_RAILWAY else "Local"
-
-    # Count sent jobs
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM sent_jobs")
-        total_sent = c.fetchone()[0]
-        conn.close()
-    except Exception:
-        total_sent = 0
-
+    total_sent = get_sent_count()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     return (
@@ -214,9 +203,7 @@ def main():
     logger.info(f"Location filter: {LOCATION_FILTER}")
     logger.info(f"Environment: {ENVIRONMENT} (Railway: {IS_RAILWAY})")
 
-    # Init database — ensure data directory exists
-    data_dir = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
-    os.makedirs(data_dir, exist_ok=True)
+    # Init database
     init_db()
 
     # Send startup notification
