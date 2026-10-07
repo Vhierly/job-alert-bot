@@ -767,8 +767,8 @@ def scrape_all(on_job_found=None) -> list:
     for keyword in SEARCH_KEYWORDS:
         logger.info(f"Searching: {keyword}")
 
-        # Sources confirmed working (tested 2026-10-07)
-        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_jobid]:
+        # Sources confirmed working with accurate Manado location filter
+        for scraper in [scrape_kalibrr, scrape_linkedin]:
             try:
                 jobs = scraper(keyword, on_job_found=on_job_found)
                 for job in jobs:

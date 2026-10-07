@@ -138,7 +138,7 @@ def job_check():
 
         fallback_jobs = []
         seen_fb = set()
-        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_jobid]:
+        for scraper in [scrape_kalibrr, scrape_linkedin]:
             try:
                 jobs = scraper("manado")
                 for job in jobs:
