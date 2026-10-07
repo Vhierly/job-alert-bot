@@ -29,7 +29,7 @@ from config import (
 )
 from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs, get_sent_count
 from scraper import scrape_all
-from formatter import format_job_message, format_no_jobs
+from formatter import format_job_message, format_no_jobs, format_all_manado_message
 
 # Logging
 logging.basicConfig(
@@ -102,7 +102,8 @@ def send_heartbeat():
 
 
 def job_check():
-    """Main job: scrape with streaming — send notification immediately on each match."""
+    """Main job: scrape with streaming — send notification immediately on each match.
+    Fallback: if no keyword match, send all available Manado jobs in one message."""
     logger.info("=" * 50)
     logger.info(f"Job check started at {datetime.now()}")
 
@@ -131,7 +132,35 @@ def job_check():
     logger.info(f"Job check completed — found {found_count}, sent {sent_count}")
 
     if sent_count == 0:
-        send_notification(format_no_jobs())
+        # Fallback: no keyword match — send all available Manado jobs in one message
+        logger.info("No keyword match — running fallback: all Manado jobs")
+        send_progress("Ga ada yang match keyword, cari semua lowongan Manado...")
+
+        fallback_jobs = []
+        seen_fb = set()
+        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_jobid]:
+            try:
+                jobs = scraper("manado")
+                for job in jobs:
+                    key = f"{job['company'].lower()}|{job['position'].lower()}|{job['source']}"
+                    if key not in seen_fb and not is_job_sent(key):
+                        seen_fb.add(key)
+                        fallback_jobs.append(job)
+                time.sleep(random.uniform(1, 2))
+            except Exception as e:
+                logger.error(f"Fallback scraper error: {e}")
+
+        if fallback_jobs:
+            # Mark all as sent
+            for job in fallback_jobs:
+                job_key = f"{job['company'].lower()}|{job['position'].lower()}|{job['source']}"
+                mark_job_sent(job_key, job["company"], job["position"], job["source"])
+
+            message = format_all_manado_message(fallback_jobs)
+            send_notification(message)
+            logger.info(f"Fallback sent {len(fallback_jobs)} Manado jobs")
+        else:
+            send_notification(format_no_jobs())
 
     # Cleanup old entries
     cleanup_old_jobs()

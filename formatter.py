@@ -31,5 +31,31 @@ def format_job_message(jobs: list, start_index: int = 1) -> str:
     return header + "\n---\n".join(messages) + footer
 
 
+def format_all_manado_message(jobs: list) -> str:
+    """Format all available Manado jobs into one neat message (fallback mode)."""
+    if not jobs:
+        return format_no_jobs()
+
+    lines = [
+        f"📋 <b>Semua Lowongan Tersedia di Manado</b>",
+        f"🔍 Tidak ada yang match keyword, ini semua yang tersedia:",
+        "",
+    ]
+
+    for i, job in enumerate(jobs, 1):
+        lines.append(f"<b>{i}. {job['position']}</b>")
+        lines.append(f"   🏢 {job['company']}")
+        lines.append(f"   📍 {job['location']}")
+        lines.append(f"   ⏰ {job['deadline']}")
+        lines.append(f"   🔗 {job['link']}")
+        lines.append(f"   📰 {job['source']}")
+        lines.append("")
+
+    lines.append(f"Total: {len(jobs)} lowongan")
+    lines.append("Jika tidak relevan, abaikan saja. Bot akan cek lagi jam berikutnya.")
+
+    return "\n".join(lines)
+
+
 def format_no_jobs() -> str:
     return "✅ Tidak ada lowongan baru di Manado saat ini. Bot akan cek lagi jam berikutnya."
