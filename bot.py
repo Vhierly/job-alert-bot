@@ -22,6 +22,8 @@ from config import (
     SCHEDULE_HOURS,
     MAX_JOBS_PER_NOTIFICATION,
     LOCATION_FILTER,
+    ENVIRONMENT,
+    IS_RAILWAY,
 )
 from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs
 from scraper import scrape_all
@@ -80,12 +82,13 @@ def send_progress(message: str):
 
 def send_heartbeat():
     """Send a heartbeat to show the bot is alive."""
+    env_label = "Railway" if IS_RAILWAY else "Local"
     try:
         requests.post(
             f"{TELEGRAM_API}/sendMessage",
             json={
                 "chat_id": TELEGRAM_CHAT_ID,
-                "text": f"💓 <b>Bot Heartbeat</b> — {datetime.now().strftime('%H:%M')}\n\nBot masih aktif dan akan cek lagi jam berikutnya.",
+                "text": f"💓 <b>Bot Heartbeat</b> — {datetime.now().strftime('%H:%M')}\n🖥️ Environment: {env_label}\n\nBot masih aktif dan akan cek lagi jam berikutnya.",
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True,
             },
@@ -138,17 +141,20 @@ def main():
     logger.info(f"Timezone: {TIMEZONE}")
     logger.info(f"Schedule hours: {SCHEDULE_HOURS} (24/7)")
     logger.info(f"Location filter: {LOCATION_FILTER}")
+    logger.info(f"Environment: {ENVIRONMENT} (Railway: {IS_RAILWAY})")
 
     # Init database
     init_db()
 
     # Send startup notification
+    env_label = "Railway (Production)" if IS_RAILWAY else "Local"
     send_notification(
         "🤖 <b>Job Alert Bot Started!</b>\n"
         f"🌏 Timezone: {TIMEZONE}\n"
         f"🕘 Schedule: 24/7 (setiap jam)\n"
         f"📍 Location: {LOCATION_FILTER.title()} only\n"
-        f"📋 Max jobs per notification: {MAX_JOBS_PER_NOTIFICATION}\n\n"
+        f"📋 Max jobs per notification: {MAX_JOBS_PER_NOTIFICATION}\n"
+        f"🖥️ Environment: {env_label}\n\n"
         "Bot akan cek lowongan setiap jam, 24 jam sehari."
     )
 

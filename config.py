@@ -11,6 +11,10 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "YOUR_CHAT_ID_HERE")
 
+# Environment detection
+ENVIRONMENT = os.getenv("RAILWAY_ENVIRONMENT_NAME", "local")  # "production" on Railway, "local" otherwise
+IS_RAILWAY = ENVIRONMENT != "local"
+
 # Location filter — Manado only
 LOCATION_FILTER = "manado"
 
