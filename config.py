@@ -50,6 +50,10 @@ SEARCH_KEYWORDS = [
     "Supervisor",
     "Staff",
     "Karyawan",
+    "Administrasi Bisnis",
+    "Manajemen Bisnis",
+    "Business Administration",
+    "Business Management",
     "Manado",
 ]
 
