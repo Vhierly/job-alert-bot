@@ -28,7 +28,7 @@ from config import (
     SUPABASE_KEY,
 )
 from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs, get_sent_count
-from scraper import scrape_all
+from scraper import scrape_all, scrape_kalibrr, scrape_linkedin
 from formatter import format_job_message, format_no_jobs, format_all_manado_message
 
 # Logging
