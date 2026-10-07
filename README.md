@@ -7,7 +7,7 @@ Bot Telegram yang cari lowongan kerja di Manado (fokus Excel & Office) dan kirim
 - 🔔 **Notif Real-Time** — Langsung kirim tiap nemu job match, ga nunggu scrape semua
 - 📍 **Manado Only** — Filter lokasi Manado
 - 🚫 **Skip Sales** — Filter otomatis buat job sales, marketing, dll
-- 📱 **Multi-Source** — Kalibrr (confirmed working), JobStreet, LinkedIn, Indeed, Google Jobs, Glints, Twitter/X, Facebook, Instagram, Job Fair (auto-skip if blocked)
+- 📱 **Multi-Source** — Kalibrr, LinkedIn (confirmed working), JobStreet, Indeed, Google Jobs, Glints, Twitter/X, Facebook, Instagram, Job Fair (auto-skip if blocked)
 - 💓 **Heartbeat** — Bot kirim sinyal hidup tiap 3 jam
 - ⏰ **24/7** — Cek lowongan setiap jam, hari libur pun tetap jalan
 - 🔄 **Anti-Duplicate** — Job sama ga dikirim 2x (Supabase database)
