@@ -706,8 +706,7 @@ def scrape_all(on_job_found=None) -> list:
     for keyword in SEARCH_KEYWORDS:
         logger.info(f"Searching: {keyword}")
 
-        # Google Jobs, Indeed, Glints, Twitter/X, Facebook, Instagram removed — require login or bot protection
-        for scraper in [scrape_kalibrr, scrape_jobstreet, scrape_linkedin]:
+        for scraper in [scrape_kalibrr, scrape_jobstreet, scrape_linkedin, scrape_indeed, scrape_google_jobs, scrape_twitter_x, scrape_facebook, scrape_instagram, scrape_glints]:
             try:
                 jobs = scraper(keyword, on_job_found=on_job_found)
                 for job in jobs:
