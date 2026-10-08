@@ -746,6 +746,175 @@ def scrape_glints(keyword: str, on_job_found=None) -> list:
     return jobs
 
 
+def scrape_lokermanado(keyword: str, on_job_found=None) -> list:
+    """Scrape LokerManado.com — local Manado job portal (cloudscraper)."""
+    import cloudscraper
+    from bs4 import BeautifulSoup
+
+    jobs = []
+    url = "https://lokermanado.com/lowongan/lokasi/kota-manado"
+    try:
+        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+        resp = scraper.get(url, timeout=20, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        # Each job card is an <a> containing h4.job-name and .company-name
+        cards = soup.find_all('a', href=True)
+        job_cards = [c for c in cards if '/lowongan/' in c.get('href', '')
+                     and 'lokasi' not in c.get('href', '')
+                     and 'profesi' not in c.get('href', '')
+                     and c.find('h4', class_='job-name')]
+
+        logger.info(f"LokerManado: Found {len(job_cards)} job cards for '{keyword}'")
+
+        for card in job_cards[:15]:
+            try:
+                href = card.get('href', '')
+                if not href.startswith('http'):
+                    href = 'https://lokermanado.com' + href
+
+                title_el = card.find('h4', class_='job-name')
+                position = _clean(title_el.get_text()) if title_el else None
+
+                # Company name — first .company-name div with actual text
+                company = "LokerManado"
+                for cn in card.find_all(class_='company-name'):
+                    txt = _clean(cn.get_text())
+                    if txt and txt != '•' and 'Manado' not in txt:
+                        company = txt
+                        break
+
+                # Location — .company-name containing "Kota"/"Kab"
+                location = "Kota Manado"
+                for cn in card.find_all(class_='company-name'):
+                    txt = _clean(cn.get_text())
+                    if 'Kota' in txt or 'Kab' in txt:
+                        location = txt
+                        break
+
+                if position and not _is_excluded(f"{position} {company}"):
+                    job = {
+                        "company": company,
+                        "position": position,
+                        "location": location,
+                        "deadline": "Cek di halaman lowongan",
+                        "email": "Cek di halaman lowongan",
+                        "link": href,
+                        "source": "LokerManado",
+                    }
+                    jobs.append(job)
+                    logger.info(f"  ✓ {company} | {position} | {location}")
+                    if on_job_found:
+                        on_job_found(job)
+            except Exception:
+                continue
+
+    except Exception as e:
+        logger.warning(f"LokerManado scrape failed: {e}")
+
+    return jobs
+
+
+def scrape_lokersulut(keyword: str, on_job_found=None) -> list:
+    """Scrape LokerSulut.com — North Sulawesi local job portal (cloudscraper)."""
+    import cloudscraper
+    from bs4 import BeautifulSoup
+
+    jobs = []
+    url = "https://www.lokersulut.com/"
+    try:
+        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+        resp = scraper.get(url, timeout=20, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        links = soup.find_all('a', href=True)
+        job_links = [l for l in links if any(kw in l.get('href', '').lower() for kw in ['loker', 'lowongan', 'kerja'])
+                     and len(l.get_text(strip=True)) > 8]
+
+        logger.info(f"LokerSulut: Found {len(job_links)} job links for '{keyword}'")
+
+        for link in job_links[:15]:
+            try:
+                title = _clean(link.get_text(strip=True))
+                href = link.get('href', '')
+                if not href.startswith('http'):
+                    href = 'https://www.lokersulut.com' + href
+
+                if title and not _is_excluded(title) and len(title) > 10:
+                    job = {
+                        "company": "LokerSulut",
+                        "position": title[:100],
+                        "location": "Sulawesi Utara",
+                        "deadline": "Cek di halaman lowongan",
+                        "email": "Cek di halaman lowongan",
+                        "link": href,
+                        "source": "LokerSulut",
+                    }
+                    jobs.append(job)
+                    logger.info(f"  ✓ {title[:60]}")
+                    if on_job_found:
+                        on_job_found(job)
+            except Exception:
+                continue
+
+    except Exception as e:
+        logger.warning(f"LokerSulut scrape failed: {e}")
+
+    return jobs
+
+
+def scrape_lowonganesia(keyword: str, on_job_found=None) -> list:
+    """Scrape Lowonganesia.com — Manado job listings (cloudscraper)."""
+    import cloudscraper
+    from bs4 import BeautifulSoup
+    import re as _re
+
+    jobs = []
+    url = "https://www.lowonganesia.com/loker-di/manado"
+    try:
+        scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+        resp = scraper.get(url, timeout=20, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        links = soup.find_all('a', href=True)
+        job_links = [l for l in links if l.get('href', '').startswith('/loker/')]
+
+        logger.info(f"Lowonganesia: Found {len(job_links)} job links for '{keyword}'")
+
+        for link in job_links[:15]:
+            try:
+                title = _clean(link.get_text(strip=True))
+                href = link.get('href', '')
+                if not href.startswith('http'):
+                    href = 'https://www.lowonganesia.com' + href
+
+                if title and len(title) > 8 and not _is_excluded(title):
+                    # Try to extract company from title "Lowongan Kerja [Position] [Company]"
+                    position = title.replace("Lowongan Kerja", "").strip()
+                    company = "Lowonganesia"
+
+                    job = {
+                        "company": company,
+                        "position": position[:100],
+                        "location": "Manado",
+                        "deadline": "Cek di halaman lowongan",
+                        "email": "Cek di halaman lowongan",
+                        "link": href,
+                        "source": "Lowonganesia",
+                    }
+                    jobs.append(job)
+                    logger.info(f"  ✓ {position[:60]}")
+                    if on_job_found:
+                        on_job_found(job)
+            except Exception:
+                continue
+
+    except Exception as e:
+        logger.warning(f"Lowonganesia scrape failed: {e}")
+
+    return jobs
+
+
 def scrape_all(on_job_found=None) -> list:
     """Scrape all sources for all keywords.
     If on_job_found callback is provided, calls it immediately for each match."""
@@ -768,7 +937,7 @@ def scrape_all(on_job_found=None) -> list:
         logger.info(f"Searching: {keyword}")
 
         # Sources confirmed working with accurate Manado location filter
-        for scraper in [scrape_kalibrr, scrape_linkedin]:
+        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_lokermanado, scrape_lowonganesia]:
             try:
                 jobs = scraper(keyword, on_job_found=on_job_found)
                 for job in jobs:

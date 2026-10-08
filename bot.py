@@ -28,7 +28,7 @@ from config import (
     SUPABASE_KEY,
 )
 from database import init_db, is_job_sent, mark_job_sent, cleanup_old_jobs, get_sent_count
-from scraper import scrape_all, scrape_kalibrr, scrape_linkedin
+from scraper import scrape_all, scrape_kalibrr, scrape_linkedin, scrape_lokermanado, scrape_lowonganesia
 from formatter import format_job_message, format_no_jobs, format_all_manado_message
 
 # Logging
@@ -138,7 +138,7 @@ def job_check():
 
         fallback_jobs = []
         seen_fb = set()
-        for scraper in [scrape_kalibrr, scrape_linkedin]:
+        for scraper in [scrape_kalibrr, scrape_linkedin, scrape_lokermanado, scrape_lowonganesia]:
             try:
                 jobs = scraper("manado")
                 for job in jobs:
